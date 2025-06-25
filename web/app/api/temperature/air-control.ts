@@ -24,10 +24,11 @@ export const airControl = async (data: AirControlDto): Promise<string> => {
 
     const scriptPath = path.join(process.cwd(), '..', "scripts", 'irrp.py');
 
-    const jsonfile = resolveJsonFile(data)
+    const jsonfile = path.join(process.cwd(), '..', "data", resolveJsonFile(data))
     if (jsonfile === "") {
         throw new Error('Invalid mode or fan speed')
     }
+
 
     //python3 irrp.py -p -g18 -f ${jsonfile} ${temperature}
     const pythonProcess = spawn('python3', [scriptPath, '-p', '-g18', '-f', jsonfile, data.temperature.toString()]);
