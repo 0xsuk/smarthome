@@ -1,8 +1,24 @@
 import json
+import sys
+
+# コマンドライン引数からファイル名を取得
+if len(sys.argv) != 2:
+    print("Usage: python a.py <json_filename>")
+    sys.exit(1)
+
+filename = sys.argv[1]
 
 # JSONファイルを読み込む
-with open('code.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
+try:
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+except FileNotFoundError:
+    print(f"Error: File '{filename}' not found.")
+    sys.exit(1)
+except json.JSONDecodeError:
+    print(f"Error: '{filename}' is not a valid JSON file.")
+    sys.exit(1)
+
 def calc_mode(values):
     # Count frequency of each value
     freq = {}
