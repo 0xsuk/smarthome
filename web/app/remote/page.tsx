@@ -58,20 +58,24 @@ export default function RemotePage() {
       try {
         const response = await fetch('/api/temperature', {
           method: 'POST',
-          body: JSON.stringify({ cmd: "air-control", data: {
-          isOn,
-          temperature,
-          mode,
-          fanSpeed
-        } })
-      })
+          body: JSON.stringify({
+            cmd: "air-control", data: {
+              isOn,
+              temperature,
+              mode,
+              fanSpeed
+            }
+          })
+        })
+        const data = await response.json()
+        console.log(data)
       } catch (error) {
         console.error('Error:', error)
       }
     }
 
     postInfrared()
-  } ,[isOn, temperature, mode, fanSpeed])
+  }, [isOn, temperature, mode, fanSpeed])
   const handlePowerToggle = () => {
     setIsOn(!isOn)
   }
@@ -100,7 +104,7 @@ export default function RemotePage() {
   // 電力消費グラフコンポーネント
   const PowerConsumptionChart = () => {
     const maxConsumption = Math.max(...powerData.map(d => d.consumption))
-    
+
     return (
       <Card className="bg-gray-900 border-2 border-green-500 rounded-2xl shadow-lg shadow-green-500/20 mt-6">
         <CardContent className="p-6">
@@ -110,7 +114,7 @@ export default function RemotePage() {
               POWER_CONSUMPTION
             </h2>
           </div>
-          
+
           <div className="bg-black border-2 border-gray-700 rounded-lg p-4">
             <div className="flex items-end justify-between gap-0.5 h-40 mb-4 overflow-x-auto">
               {powerData.map((data, index) => {
@@ -120,7 +124,7 @@ export default function RemotePage() {
                     <div className="w-full h-32 flex items-end justify-center">
                       <div
                         className="w-2 bg-gradient-to-t from-green-600 to-green-400 rounded-t-sm transition-all duration-300 hover:from-green-500 hover:to-green-300 hover:shadow-lg hover:shadow-green-400/50 hover:w-3"
-                        style={{ 
+                        style={{
                           height: `${height}%`,
                           minHeight: '4px' // 最小の高さを設定
                         }}
@@ -135,7 +139,7 @@ export default function RemotePage() {
                 )
               })}
             </div>
-            
+
             {/* 統計情報 */}
             <div className="pt-4 border-t border-gray-700">
               <div className="grid grid-cols-3 gap-4 text-center">
@@ -207,13 +211,13 @@ export default function RemotePage() {
                 {temperature}
               </div>
               <div className="text-sm flex items-center justify-center gap-2 text-green-300 font-mono">
-                  <>
-                    {getModeIcon(mode)}
-                    <span>{mode}</span>
-                    <span>   </span>
-                    <Wind className="w-4 h-4" />
-                    <span>{fanSpeed}</span>
-                  </>
+                <>
+                  {getModeIcon(mode)}
+                  <span>{mode}</span>
+                  <span>   </span>
+                  <Wind className="w-4 h-4" />
+                  <span>{fanSpeed}</span>
+                </>
               </div>
             </div>
 
@@ -221,11 +225,10 @@ export default function RemotePage() {
             <div className="flex justify-center mb-6">
               <Button
                 onClick={handlePowerToggle}
-                className={`w-16 h-16 rounded-lg font-bold font-mono tracking-wider border-2 transition-all ${
-                  isOn
-                    ? "bg-red-900/80 border-red-400 text-red-300 shadow-lg shadow-red-500/50 hover:bg-red-800/80"
-                    : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-400"
-                }`}
+                className={`w-16 h-16 rounded-lg font-bold font-mono tracking-wider border-2 transition-all ${isOn
+                  ? "bg-red-900/80 border-red-400 text-red-300 shadow-lg shadow-red-500/50 hover:bg-red-800/80"
+                  : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-400"
+                  }`}
               >
                 <Power className="w-6 h-6" />
               </Button>
@@ -262,11 +265,10 @@ export default function RemotePage() {
                 onClick={() => setMode("COOL")}
                 disabled={!isOn}
                 variant="outline"
-                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${
-                  mode === "COOL" && isOn
-                    ? "bg-cyan-900/80 border-cyan-400 text-cyan-300 shadow-lg shadow-cyan-500/50"
-                    : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-cyan-500 hover:text-cyan-400"
-                }`}
+                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${mode === "COOL" && isOn
+                  ? "bg-cyan-900/80 border-cyan-400 text-cyan-300 shadow-lg shadow-cyan-500/50"
+                  : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-cyan-500 hover:text-cyan-400"
+                  }`}
               >
                 <Snowflake className="w-4 h-4" />
                 COOL
@@ -275,11 +277,10 @@ export default function RemotePage() {
                 onClick={() => setMode("HEAT")}
                 disabled={!isOn}
                 variant="outline"
-                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${
-                  mode === "HEAT" && isOn
-                    ? "bg-red-900/80 border-red-400 text-red-300 shadow-lg shadow-red-500/50"
-                    : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-400"
-                }`}
+                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${mode === "HEAT" && isOn
+                  ? "bg-red-900/80 border-red-400 text-red-300 shadow-lg shadow-red-500/50"
+                  : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-400"
+                  }`}
               >
                 <Sun className="w-4 h-4" />
                 HEAT
@@ -288,11 +289,10 @@ export default function RemotePage() {
                 onClick={() => setMode("DRY")}
                 disabled={!isOn}
                 variant="outline"
-                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${
-                  mode === "DRY" && isOn
-                    ? "bg-purple-900/80 border-purple-400 text-purple-300 shadow-lg shadow-purple-500/50"
-                    : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-purple-500 hover:text-purple-400"
-                }`}
+                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${mode === "DRY" && isOn
+                  ? "bg-purple-900/80 border-purple-400 text-purple-300 shadow-lg shadow-purple-500/50"
+                  : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-purple-500 hover:text-purple-400"
+                  }`}
               >
                 <Droplets className="w-4 h-4" />
                 DRY
@@ -308,11 +308,10 @@ export default function RemotePage() {
                   disabled={!isOn}
                   variant="outline"
                   size="sm"
-                  className={`h-10 font-mono text-xs tracking-wider border-2 transition-all ${
-                    fanSpeed === speed && isOn
-                      ? "bg-orange-900/80 border-orange-400 text-orange-300 shadow-lg shadow-orange-500/50"
-                      : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-orange-500 hover:text-orange-400"
-                  }`}
+                  className={`h-10 font-mono text-xs tracking-wider border-2 transition-all ${fanSpeed === speed && isOn
+                    ? "bg-orange-900/80 border-orange-400 text-orange-300 shadow-lg shadow-orange-500/50"
+                    : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-orange-500 hover:text-orange-400"
+                    }`}
                 >
                   {speed === "AUTO+" ? "AUTO+" : speed === "AUTO" ? "AUTO" : "SIZUKA"}
                 </Button>

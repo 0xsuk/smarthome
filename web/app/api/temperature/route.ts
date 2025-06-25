@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         return dhtStop(); */
       case 'air-control':
         const out = await airControl(body.data as AirControlDto);
-        return NextResponse.json({ success: true, message: 'Air control command completed successfully', output: out }, { status: 200 });
+        return NextResponse.json({ success: true, message: 'Air control command completed successfully', out: out }, { status: 200 });
       default:
         return NextResponse.json({ error: 'Invalid command' }, { status: 400 });
     }

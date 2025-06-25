@@ -20,7 +20,7 @@ const resolveJsonFile = (data: AirControlDto) => {
     return ""
 }
 
-export const airControl = async (data: AirControlDto): Promise<{ out: string }> => {
+export const airControl = async (data: AirControlDto): Promise<string> => {
 
     const scriptPath = path.join(process.cwd(), '..', "scripts", 'irrp.py');
 
@@ -47,7 +47,7 @@ export const airControl = async (data: AirControlDto): Promise<{ out: string }> 
     return await new Promise((resolve, reject) => {
         pythonProcess.on('close', (code) => {
             if (code === 0) {
-                resolve({ out });
+                resolve(out);
             } else {
                 reject(new Error(`Python process exited with code ${code}: ${out}`));
             }
