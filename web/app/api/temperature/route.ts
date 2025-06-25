@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // URLパラメータからcmdを取得
-    const { searchParams } = new URL(request.url);
-    const cmd = searchParams.get('cmd') || 'spawn';
-    const stream = searchParams.get('stream') === 'true';
+    // リクエストボディからパラメータを取得
+    const body = await request.json();
+    const cmd = body.cmd || 'spawn';
+    const stream = body.stream === true;
     
     console.log(`Temperature API called with cmd: ${cmd}, stream: ${stream}`);
     
