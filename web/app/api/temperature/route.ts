@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
 // プロセスをスポーンして処理する関数
 async function dhtStart() {
-  const scriptPath = path.join(process.cwd(), '..', 'scripts', 'dht.py');
+  const scriptPath = path.join(process.cwd(), '..', 'scripts', 'dht_emu.py');
 
 
   // Server-Sent Eventsでストリーミング
