@@ -46,7 +46,6 @@ class TemperatureManager {
 
       // Set up stdout data listener
       this.process.stdout?.on("data", (data: Buffer) => {
-        console.log("data", data.toString());
         this.handleStdout(data.toString());
       });
 
@@ -75,8 +74,6 @@ class TemperatureManager {
   private handleStdout(data: string) {
     // Add new data to buffer
     this.stdout_buffer += data;
-
-    console.log("stdoutbuffer", this.stdout_buffer);
 
     // Process complete lines
     const lines = this.stdout_buffer.split("\n");
@@ -131,8 +128,6 @@ class TemperatureManager {
   }
 
   private processLine(line: string) {
-    console.log("Received line from Python script:", line);
-
     // Skip error messages and invalid lines
     if (!line.includes("temp=") || !line.includes("humidity=")) {
       return;
@@ -173,7 +168,6 @@ class TemperatureManager {
     }
 
     this.temp_buffer.push({ temp, humidity, timestamp: now });
-    console.log("Added measurement:", { temp, humidity, timestamp: now });
   }
 
   public getHourlyMeasurements() {
@@ -185,7 +179,6 @@ class TemperatureManager {
     humidity: number;
     timestamp: Date;
   } | null {
-    console.log("getLatestMeasurement", this.temp_buffer.length);
     if (this.temp_buffer.length === 0) {
       return null;
     }

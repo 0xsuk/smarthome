@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { temperatureManager } from "../../../lib/TemperatureManager";
 
 export const temperature = () => {
+  let isStreamActive = false;
+  let intervalId: NodeJS.Timeout;
+
   try {
     console.log("temperature");
     temperatureManager.start();
@@ -17,16 +20,12 @@ export const temperature = () => {
     // Create a ReadableStream for SSE
     const readableStream = new ReadableStream({
       start(controller) {
-        let isStreamActive = true;
-        let intervalId: NodeJS.Timeout;
+        isStreamActive = true;
 
         // Set up polling for new data
         const pollForUpdates = () => {
-
-            console.log("pollForUpdates")
           if (!isStreamActive) return;
 
-          console.log("getLatestMeasurement")
           const measurement = temperatureManager.getLatestMeasurement();
 
           // Send new measurements if buffer has grown
@@ -34,11 +33,11 @@ export const temperature = () => {
             const sseData = `data: ${JSON.stringify(measurement)}\n\n`;
             controller.enqueue(new TextEncoder().encode(sseData));
             console.log("sending: ", measurement);
-
           }
         };
 
         // Start continuous polling every second
+        pollForUpdates();
         intervalId = setInterval(pollForUpdates, 1000);
 
         // Handle stream cancellation
@@ -50,7 +49,10 @@ export const temperature = () => {
         };
       },
       cancel() {
-        // Cleanup when stream is cancelled
+        isStreamActive = false;
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
         console.log("Temperature SSE stream cancelled");
       },
     });

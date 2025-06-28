@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Home } from "lucide-react"
@@ -8,8 +8,22 @@ import Link from "next/link"
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
-// サンプルデータ生成
-const generateHourlyData = () => {
+// 温度データの型定義
+interface TemperatureReading {
+  temp: number
+  humidity: number
+  timestamp: Date
+}
+
+// チャート用データの型定義
+interface ChartData {
+  time: string
+  temperature: number
+  humidity: number
+}
+
+// サンプルデータ生成（初期表示用）
+const generateHourlyData = (): ChartData[] => {
   const data = []
   const now = new Date()
 
@@ -40,38 +54,92 @@ const generateDailyData = (days: number) => {
 }
 
 export default function ThermometerPage() {
-  const [currentTemp, setCurrentTemp] = useState(20.6)
-  const [currentHumidity, setCurrentHumidity] = useState(59)
+
+  const [tempObj, setTempObj] = useState<TemperatureReading | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [viewMode, setViewMode] = useState<"today" | "1day" | "2-6days">("today")
+  const [isConnected, setIsConnected] = useState(false)
+  //const [realtimeData, setRealtimeData] = useState<ChartData[]>([])
 
-  const hourlyData = generateHourlyData()
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  /* const hourlyData = generateHourlyData()
   const dailyData1 = generateDailyData(1)
-  const dailyData6 = generateDailyData(6)
+  const dailyData6 = generateDailyData(6) */
+
+  // SSE接続を開始する関数
+  const startTemperatureStream = () => {
+    try {
+      // EventSourceでSSEストリームを開始
+      const eventSource = new EventSource('/api/temperature?cmd=temperature')
+      
+      eventSourceRef.current = eventSource
+
+      console.log("startTemperatureStream", eventSource)
+
+      eventSource.onopen = () => {
+        setIsConnected(true)
+        console.log('Temperature SSE connection opened')
+      }
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log('Temperature reading:', data)
+          setTempObj(data)
+        } catch (error) {
+          console.error('Error parsing temperature data:', error)
+        }
+      }
+
+      eventSource.onerror = (error) => {
+        console.error('Temperature SSE error:', error)
+        setIsConnected(false)
+      }
+
+    } catch (error) {
+      console.error('Temperature stream error:', error)
+      setIsConnected(false)
+    }
+  }
+
+  // SSE接続を停止する関数
+  const stopTemperatureStream = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+    setIsConnected(false)
+  }
 
   useEffect(() => {
+    // 時刻更新タイマー
     const timer = setInterval(() => {
       setCurrentTime(new Date())
-      // 温湿度を少し変動させる
-      setCurrentTemp((prev) => prev + (Math.random() - 0.5) * 0.2)
-      setCurrentHumidity((prev) => Math.max(0, Math.min(100, prev + (Math.random() - 0.5) * 2)))
-    }, 5000)
+    }, 1000)
 
-    return () => clearInterval(timer)
+    // 温度ストリームを開始
+    startTemperatureStream()
+
+    return () => {
+      clearInterval(timer)
+      stopTemperatureStream()
+    }
   }, [])
 
-  const getChartData = () => {
+/*   const getChartData = (): ChartData[] => {
     switch (viewMode) {
       case "today":
-        return hourlyData
+        // リアルタイムデータがある場合はそれを使用、なければサンプルデータ
+        return realtimeData.length > 0 ? realtimeData : hourlyData
       case "1day":
         return dailyData1
       case "2-6days":
         return dailyData6
       default:
-        return hourlyData
+        return realtimeData.length > 0 ? realtimeData : hourlyData
     }
-  }
+  } */
 
   const getTitle = () => {
     switch (viewMode) {
@@ -126,14 +194,14 @@ export default function ThermometerPage() {
               {/* LCD風ディスプレイ */}
               <div className="bg-black border-4 border-gray-700 p-6 rounded-lg font-mono text-center mb-4 shadow-inner">
                 <div className="text-4xl font-bold mb-2 text-green-400 tracking-wider">
-                  {currentTemp.toFixed(1)}°C {currentHumidity.toFixed(0)}%
+                  {tempObj == null ? "N/A" : tempObj?.temp.toFixed(1) + "°C " + tempObj?.humidity.toFixed(0) + "%"}
                 </div>
                 <div className="text-sm mb-4 text-green-300">
-                  {currentTime.toLocaleString("ja-JP")} | MODE: {getTitle()}
+                  {tempObj?.timestamp.toLocaleString("ja-JP")} | MODE: {getTitle()}
                 </div>
 
                 {/* ミニグラフ表示エリア */}
-                <div className="h-20 bg-green-950 rounded border-2 border-green-700 p-2">
+               {/*  <div className="h-20 bg-green-950 rounded border-2 border-green-700 p-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={getChartData().slice(-12)}>
                       <defs>
@@ -162,12 +230,12 @@ export default function ThermometerPage() {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
+                </div> */}
 
                 {/* システム情報 */}
                 <div className="mt-4 text-xs text-green-500 flex justify-between">
                   <span>SYS: ONLINE</span>
-                  <span>CONN: STABLE</span>
+                  <span>CONN: {isConnected ? "LIVE" : "OFFLINE"}</span>
                   <span>PWR: 98%</span>
                 </div>
               </div>
@@ -203,15 +271,15 @@ export default function ThermometerPage() {
                 </Button>
               </div>
 
-              {/* 現在の表示モード */}
+              {/*  
               <div className="text-center text-sm text-green-400 mb-4 font-mono">
-                [DISPLAY_MODE: {getTitle()}] | [DATA_POINTS: {getChartData().length}]
-              </div>
+                [DISPLAY_MODE: {getTitle()}] | [DATA_POINTS: {getChartData().length}] | [STATUS: {isConnected ? "LIVE" : "OFFLINE"}]
+              </div> */}
             </CardContent>
           </Card>
 
           {/* 詳細グラフ */}
-          <Card className="bg-gray-900 border-2 border-blue-500 shadow-lg shadow-blue-500/20">
+          {/* <Card className="bg-gray-900 border-2 border-blue-500 shadow-lg shadow-blue-500/20">
             <CardHeader className="border-b border-gray-700">
               <CardTitle className="text-center text-blue-400 font-mono tracking-wider">
                 [{getTitle()}] ENVIRONMENTAL_DATA_ANALYSIS
@@ -295,7 +363,7 @@ export default function ThermometerPage() {
                 </div>
               </div>
 
-              {/* 追加のハッカー風情報 */}
+              {/* 追加のハッカー風情報 
               <div className="mt-6 grid grid-cols-3 gap-4 text-xs font-mono">
                 <div className="bg-gray-800 border border-green-500 p-2 rounded">
                   <div className="text-green-400">TEMP_AVG</div>
@@ -314,11 +382,11 @@ export default function ThermometerPage() {
                 </div>
                 <div className="bg-gray-800 border border-purple-500 p-2 rounded">
                   <div className="text-purple-400">STATUS</div>
-                  <div className="text-purple-300">OPTIMAL</div>
+                  <div className="text-purple-300">{isConnected ? "LIVE" : "OFFLINE"}</div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>
