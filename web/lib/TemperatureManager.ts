@@ -36,7 +36,7 @@ class TemperatureManager {
         process.cwd(),
         "..",
         "scripts",
-        "dht_emu.py"
+        "dht.py"
       );
 
       const homePath = require("os").homedir();
