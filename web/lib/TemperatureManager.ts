@@ -40,8 +40,8 @@ class TemperatureManager {
       );
 
       const homePath = require("os").homedir();
-      //const pythonPath = path.join(homePath, 'venv', 'air-control', 'bin', 'python3');
-      const pythonPath = "python3";
+      const pythonPath = path.join(homePath, 'venv', 'air-control', 'bin', 'python3');
+      //const pythonPath = "python3";
       this.process = spawn(pythonPath, ["-u", scriptPath]); //-u for unbuffered output fuk python
 
       // Set up stdout data listener
