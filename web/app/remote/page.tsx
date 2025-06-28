@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Home, Power, ChevronUp, ChevronDown, Wind, Snowflake, Sun, Droplets, Zap } from "lucide-react"
 import Link from "next/link"
-import { Mode, FanSpeed } from "@/app/type"
+import { Mode, FanSpeed, AirControlDto } from "@/app/type"
+import { useTemperature } from "@/hooks/useTemperature"
 
 // 電力消費データの型定義
 interface PowerData {
@@ -14,10 +15,9 @@ interface PowerData {
 }
 
 export default function RemotePage() {
-  const [isOn, setIsOn] = useState(false)
-  const [temperature, setTemperature] = useState(25)
-  const [mode, setMode] = useState<Mode>("COOL")
-  const [fanSpeed, setFanSpeed] = useState<FanSpeed>("AUTO") //for cooler and heater
+  const { tempObj, startTemperatureStream } = useTemperature()
+  const [state, setState] = useState<AirControlDto | null>(null)
+  const isInitialLoad = useRef(true)
 
   // サンプル電力消費データ（実際のアプリでは API から取得）
   const [powerData] = useState<PowerData[]>([
@@ -53,39 +53,70 @@ export default function RemotePage() {
     { date: "12/21", consumption: 15.5 },
   ])
 
+  useEffect(() => { 
+    startTemperatureStream()
+
+    const fetchRemoteController = async () => {
+      const response = await fetch('/api/temperature?cmd=air-control')
+
+      const data = await response.json()
+      const state = data.data.state as AirControlDto
+
+      if (state) {
+        setState(state)
+        
+      }
+    }
+    fetchRemoteController()
+  }, [])
+
   useEffect(() => {
     const postInfrared = async () => {
+      if (!state) return
+      
+      // Skip API call on initial load
+      if (isInitialLoad.current) {
+        isInitialLoad.current = false
+        return
+      }
+      
       try {
         const response = await fetch('/api/temperature', {
           method: 'POST',
           body: JSON.stringify({
             cmd: "air-control", data: {
-              isOn,
-              temperature,
-              mode,
-              fanSpeed
+              isOn: state.isOn,
+              temperature: state.temperature,
+              mode: state.mode,
+              fanSpeed: state.fanSpeed
             }
           })
         })
         const data = await response.json()
-        console.log(data)
+        console.log(data, state)
       } catch (error) {
         console.error('Error:', error)
       }
     }
 
     postInfrared()
-  }, [isOn, temperature, mode, fanSpeed])
+  }, [state])
+
+
+
   const handlePowerToggle = () => {
-    setIsOn(!isOn)
+    if (!state) return
+    setState({ ...state, isOn: !state.isOn })
   }
 
   const handleTempUp = () => {
-    if (temperature < 30) setTemperature(temperature + 1)
+    if (!state) return
+    if (state.temperature < 30) setState({ ...state, temperature: state.temperature + 1 })
   }
 
   const handleTempDown = () => {
-    if (temperature > 16) setTemperature(temperature - 1)
+    if (!state) return
+    if (state.temperature > 16) setState({ ...state, temperature: state.temperature - 1 })
   }
 
   const getModeIcon = (modeType: Mode) => {
@@ -169,6 +200,8 @@ export default function RemotePage() {
     )
   }
 
+  console.log(tempObj)
+
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* ハッカー風背景パターン */}
@@ -186,6 +219,8 @@ export default function RemotePage() {
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20"></div>
       </div>
 
+      {state && 
+      
       <div className="relative z-10 max-w-md mx-auto p-4">
         <div className="flex items-center justify-between mb-6">
           <Link href="/">
@@ -208,15 +243,15 @@ export default function RemotePage() {
             {/* ディスプレイ */}
             <div className="bg-black border-4 border-gray-700 text-white p-4 rounded-lg mb-6 text-center shadow-inner">
               <div className="text-3xl font-bold mb-2 text-blue-400 font-mono tracking-wider">
-                {temperature}
+                {state.temperature}
               </div>
               <div className="text-sm flex items-center justify-center gap-2 text-green-300 font-mono">
                 <>
-                  {getModeIcon(mode)}
-                  <span>{mode}</span>
+                  {getModeIcon(state.mode)}
+                  <span>{state.mode}</span>
                   <span>   </span>
                   <Wind className="w-4 h-4" />
-                  <span>{fanSpeed}</span>
+                  <span>{state.fanSpeed}</span>
                 </>
               </div>
             </div>
@@ -225,7 +260,7 @@ export default function RemotePage() {
             <div className="flex justify-center mb-6">
               <Button
                 onClick={handlePowerToggle}
-                className={`w-16 h-16 rounded-lg font-bold font-mono tracking-wider border-2 transition-all ${isOn
+                className={`w-16 h-16 rounded-lg font-bold font-mono tracking-wider border-2 transition-all ${state.isOn
                   ? "bg-red-900/80 border-red-400 text-red-300 shadow-lg shadow-red-500/50 hover:bg-red-800/80"
                   : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-400"
                   }`}
@@ -238,7 +273,7 @@ export default function RemotePage() {
             <div className="flex justify-center items-center gap-4 mb-6">
               <Button
                 onClick={handleTempDown}
-                disabled={!isOn || temperature <= 17}
+                disabled={state.temperature <= 17}
                 variant="outline"
                 size="lg"
                 className="w-12 h-12 rounded-lg bg-gray-800/50 border-2 border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400 hover:shadow-lg hover:shadow-blue-500/30 transition-all"
@@ -246,11 +281,11 @@ export default function RemotePage() {
                 <ChevronDown className="w-6 h-6" />
               </Button>
               <div className="text-xl font-bold min-w-[80px] text-center font-mono tracking-wider text-blue-400">
-                {isOn ? `${temperature}°C` : "--°C"}
+                {tempObj ? `${tempObj.temp}°C ${tempObj.humidity}%` : "---°C  　---%"}
               </div>
               <Button
                 onClick={handleTempUp}
-                disabled={!isOn || temperature >= 30}
+                disabled={state.temperature >= 30}
                 variant="outline"
                 size="lg"
                 className="w-12 h-12 rounded-lg bg-gray-800/50 border-2 border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400 hover:shadow-lg hover:shadow-blue-500/30 transition-all"
@@ -262,10 +297,9 @@ export default function RemotePage() {
             {/* モードボタン */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <Button
-                onClick={() => setMode("COOL")}
-                disabled={!isOn}
+                onClick={() => setState({ ...state, mode: "COOL" })}
                 variant="outline"
-                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${mode === "COOL" && isOn
+                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${state.mode === "COOL" 
                   ? "bg-cyan-900/80 border-cyan-400 text-cyan-300 shadow-lg shadow-cyan-500/50"
                   : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-cyan-500 hover:text-cyan-400"
                   }`}
@@ -274,10 +308,9 @@ export default function RemotePage() {
                 COOL
               </Button>
               <Button
-                onClick={() => setMode("HEAT")}
-                disabled={!isOn}
+                onClick={() => setState({ ...state, mode: "HEAT" })}
                 variant="outline"
-                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${mode === "HEAT" && isOn
+                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${state.mode === "HEAT" 
                   ? "bg-red-900/80 border-red-400 text-red-300 shadow-lg shadow-red-500/50"
                   : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-red-500 hover:text-red-400"
                   }`}
@@ -286,10 +319,9 @@ export default function RemotePage() {
                 HEAT
               </Button>
               <Button
-                onClick={() => setMode("DRY")}
-                disabled={!isOn}
+                onClick={() => setState({ ...state, mode: "DRY" })}
                 variant="outline"
-                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${mode === "DRY" && isOn
+                className={`h-12 flex items-center gap-2 font-mono tracking-wider border-2 transition-all ${state.mode === "DRY" 
                   ? "bg-purple-900/80 border-purple-400 text-purple-300 shadow-lg shadow-purple-500/50"
                   : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-purple-500 hover:text-purple-400"
                   }`}
@@ -304,11 +336,10 @@ export default function RemotePage() {
               {(["AUTO+", "AUTO", "SIZUKA"] as const).map((speed) => (
                 <Button
                   key={speed}
-                  onClick={() => setFanSpeed(speed)}
-                  disabled={!isOn}
+                  onClick={() => setState({ ...state, fanSpeed: speed })}
                   variant="outline"
                   size="sm"
-                  className={`h-10 font-mono text-xs tracking-wider border-2 transition-all ${fanSpeed === speed && isOn
+                  className={`h-10 font-mono text-xs tracking-wider border-2 transition-all ${state.fanSpeed === speed 
                     ? "bg-orange-900/80 border-orange-400 text-orange-300 shadow-lg shadow-orange-500/50"
                     : "bg-gray-800/50 border-gray-600 text-gray-400 hover:border-orange-500 hover:text-orange-400"
                     }`}
@@ -323,6 +354,7 @@ export default function RemotePage() {
         {/* 電力消費グラフ */}
         <PowerConsumptionChart />
       </div>
+      }
     </div>
   )
 }

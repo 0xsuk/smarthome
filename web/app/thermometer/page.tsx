@@ -1,19 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Home } from "lucide-react"
 import Link from "next/link"
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-
-// 温度データの型定義
-interface TemperatureReading {
-  temp: number
-  humidity: number
-  timestamp: Date
-}
+import { useTemperature } from "@/hooks/useTemperature"
 
 // チャート用データの型定義
 interface ChartData {
@@ -54,63 +48,11 @@ const generateDailyData = (days: number) => {
 }
 
 export default function ThermometerPage() {
-
-  const [tempObj, setTempObj] = useState<TemperatureReading | null>(null)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [viewMode, setViewMode] = useState<"today" | "1day" | "2-6days">("today")
-  const [isConnected, setIsConnected] = useState(false)
-  //const [realtimeData, setRealtimeData] = useState<ChartData[]>([])
-
-  const eventSourceRef = useRef<EventSource | null>(null)
-
-  /* const hourlyData = generateHourlyData()
-  const dailyData1 = generateDailyData(1)
-  const dailyData6 = generateDailyData(6) */
-
-  // SSE接続を開始する関数
-  const startTemperatureStream = () => {
-    try {
-      // EventSourceでSSEストリームを開始
-      const eventSource = new EventSource('/api/temperature?cmd=temperature')
-      
-      eventSourceRef.current = eventSource
-
-      console.log("startTemperatureStream", eventSource)
-
-      eventSource.onopen = () => {
-        setIsConnected(true)
-        console.log('Temperature SSE connection opened')
-      }
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          console.log('Temperature reading:', data)
-          setTempObj(data)
-        } catch (error) {
-          console.error('Error parsing temperature data:', error)
-        }
-      }
-
-      eventSource.onerror = (error) => {
-        console.error('Temperature SSE error:', error)
-        setIsConnected(false)
-      }
-
-    } catch (error) {
-      console.error('Temperature stream error:', error)
-      setIsConnected(false)
-    }
-  }
-
-  // SSE接続を停止する関数
-  const stopTemperatureStream = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close()
-      eventSourceRef.current = null
-    }
-    setIsConnected(false)
-  }
+  
+  // 温度データ取得のカスタムフック
+  const { tempObj, isConnected, startTemperatureStream } = useTemperature()
 
   useEffect(() => {
     // 時刻更新タイマー
@@ -123,23 +65,8 @@ export default function ThermometerPage() {
 
     return () => {
       clearInterval(timer)
-      stopTemperatureStream()
     }
   }, [])
-
-/*   const getChartData = (): ChartData[] => {
-    switch (viewMode) {
-      case "today":
-        // リアルタイムデータがある場合はそれを使用、なければサンプルデータ
-        return realtimeData.length > 0 ? realtimeData : hourlyData
-      case "1day":
-        return dailyData1
-      case "2-6days":
-        return dailyData6
-      default:
-        return realtimeData.length > 0 ? realtimeData : hourlyData
-    }
-  } */
 
   const getTitle = () => {
     switch (viewMode) {

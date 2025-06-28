@@ -1,6 +1,7 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { AirControlDto } from '@/app/type';
+import { remoteController } from '@/lib/RemoteController';
 
 
 const resolveJsonFile = (data: AirControlDto) => {
@@ -21,6 +22,8 @@ const resolveJsonFile = (data: AirControlDto) => {
 }
 
 export const airControl = async (data: AirControlDto): Promise<string> => {
+
+    remoteController.setState(data)
 
     const scriptPath = path.join(process.cwd(), '..', "scripts", 'irrp.py');
 

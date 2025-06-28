@@ -32,15 +32,18 @@ class TemperatureManager {
     console.log("start temperature manager");
 
     try {
+      const isDev = true;
       const scriptPath = path.join(
         process.cwd(),
         "..",
         "scripts",
-        "dht.py"
+        isDev ? "dht_emu.py" : "dht.py"
       );
 
       const homePath = require("os").homedir();
-      const pythonPath = path.join(homePath, 'venv', 'air-control', 'bin', 'python3');
+      const pythonPath = isDev
+        ? "python3"
+        : path.join(homePath, "venv", "air-control", "bin", "python3");
       //const pythonPath = "python3";
       this.process = spawn(pythonPath, ["-u", scriptPath]); //-u for unbuffered output fuk python
 
