@@ -32,7 +32,7 @@ class TemperatureManager {
     console.log("start temperature manager");
 
     try {
-      const isDev = true;
+      const isDev = false;
       const scriptPath = path.join(
         process.cwd(),
         "..",
