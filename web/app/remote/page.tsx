@@ -281,7 +281,7 @@ export default function RemotePage() {
                 <ChevronDown className="w-6 h-6" />
               </Button>
               <div className="text-xl font-bold min-w-[80px] text-center font-mono tracking-wider text-blue-400">
-                {tempObj ? `${tempObj.temp}°C ${tempObj.humidity}%` : "---°C  　---%"}
+                {tempObj ? `${tempObj.temp.toFixed(1)}°C ${tempObj.humidity.toFixed(1)}%` : "---°C  　---%"}
               </div>
               <Button
                 onClick={handleTempUp}
