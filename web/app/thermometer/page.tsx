@@ -194,7 +194,7 @@ export default function ThermometerPage() {
               {/* LCD風ディスプレイ */}
               <div className="bg-black border-4 border-gray-700 p-6 rounded-lg font-mono text-center mb-4 shadow-inner">
                 <div className="text-4xl font-bold mb-2 text-green-400 tracking-wider">
-                  {tempObj == null ? "N/A" : tempObj?.temp.toFixed(1) + "°C " + tempObj?.humidity.toFixed(0) + "%"}
+                  {tempObj == null ? "N/A" : tempObj?.temp.toFixed(1) + "°C " + tempObj?.humidity.toFixed(1) + "%"}
                 </div>
                 <div className="text-sm mb-4 text-green-300">
                   {tempObj?.timestamp.toLocaleString("ja-JP")} | MODE: {getTitle()}
